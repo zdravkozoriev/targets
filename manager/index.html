@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#12151c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="Targets Мениджър">
+  <title>Targets Мениджър</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon-192.png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@600;800&family=Golos+Text:wght@400;500;600;700&family=Fira+Sans+Extra+Condensed:wght@600;700&display=swap">
+  <link rel="stylesheet" href="../shared/base.css">
+</head>
+<body class="manager">
+  <header class="top">
+    <div class="top-in">
+      <div class="brand-row">
+        <div class="brand">
+          <svg class="pulse" viewBox="0 0 22 22" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="9.5" stroke="currentColor" stroke-width="2.2"/><circle cx="11" cy="11" r="5" stroke="currentColor" stroke-width="2.2"/><circle cx="11" cy="11" r="1.6" fill="currentColor"/></svg>
+          Targets <span class="role-tag">Мениджър</span>
+        </div>
+        <div class="top-actions" id="top-actions"></div>
+      </div>
+      <nav class="tabs" id="tabs"></nav>
+    </div>
+  </header>
+  <main id="app"><p class="loading">Зареждам…</p></main>
+  <div id="savebar"></div>
+  <div id="toast" role="status" hidden></div>
+  <div id="celebrate"></div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>

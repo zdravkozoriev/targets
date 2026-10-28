@@ -1,0 +1,56 @@
+rules_version = '2';
+
+// Правила за достъп до базата на Targets. Копират се във Firebase конзолата →
+// Firestore Database → Rules → Publish.
+//
+// Служителите влизат анонимно: четат всичко, записват продажби и трият своите до 12 часа след записа.
+// Мениджърите влизат с Google и трябва да имат документ в колекцията managers с ID = своя имейл.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function isManager() {
+      return signedIn()
+        && request.auth.token.email != null
+        && request.auth.token.email_verified == true
+        && exists(/databases/$(database)/documents/managers/$(request.auth.token.email));
+    }
+
+    match /managers/{email} {
+      allow read: if signedIn() && request.auth.token.email == email;
+      allow write: if false;
+    }
+
+    match /config/{docId} {
+      allow read: if signedIn();
+      allow write: if isManager();
+    }
+
+    match /shifts/{shiftId} {
+      allow read: if signedIn();
+      allow write: if isManager();
+    }
+
+    match /sales/{saleId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['date', 'time', 'ts', 'staffId', 'productId', 'qty', 'price', 'bonus', 'shiftId', 'uid', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.qty == 1
+        && request.resource.data.date is string
+        && request.resource.data.staffId is string
+        && request.resource.data.productId is string
+        && request.resource.data.price is number
+        && request.resource.data.bonus is number
+        && request.resource.data.bonus >= 0
+        && request.resource.data.bonus <= 1000;
+      allow update: if isManager();
+      allow delete: if isManager()
+        || (signedIn()
+            && resource.data.uid == request.auth.uid
+            && request.time < resource.data.createdAt + duration.value(12, 'h'));
+    }
+  }
+}
