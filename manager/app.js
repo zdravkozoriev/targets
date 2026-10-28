@@ -20,7 +20,18 @@ let api = null;
 function viewGate() {
   const s = ui.auth;
   if (s.status === "checking") return `<p class="loading">Проверявам достъпа…</p>`;
-  if (s.status === "denied") return `<section class="card gate"><h1>Нямаш достъп</h1><p class="muted">Профилът <b>${esc(s.email || "")}</b> не е мениджър на Targets. Добави го в колекцията <b>managers</b> във Firebase или влез с друг профил.</p><div><button class="btn" type="button" data-act="signout">Изход</button></div></section>`;
+  if (s.status === "denied") {
+    const url = "https://console.firebase.google.com/project/targets-47bdc/firestore/databases/-default-/data/~2Fmanagers";
+    return `<section class="card gate"><h1>Нямаш достъп</h1>
+      <p class="muted">Влезе като <b>${esc(s.email || "")}</b>, но този имейл не е добавен като мениджър.</p>
+      <ol class="steps">
+        <li>Отвори <a href="${url}" target="_blank" rel="noopener">колекцията managers във Firebase</a>.</li>
+        <li>Натисни <b>Add document</b>. В <b>Document ID</b> напиши точно <b>${esc(s.email || "")}</b>, без интервали.</li>
+        <li>Добави поле <b>name</b> (string) с твоето име и натисни <b>Save</b>.</li>
+        <li>Върни се тук и натисни <b>Провери отново</b>.</li>
+      </ol>
+      <div class="row"><button class="btn primary" type="button" data-act="recheck">Провери отново</button><button class="btn" type="button" data-act="signout">Изход</button></div></section>`;
+  }
   return `<section class="card gate"><h1>Вход за мениджъра</h1><p class="muted">Влез с Google профила, който е добавен като мениджър във Firebase.</p><div><button class="gbtn" type="button" data-act="signin"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Вход с Google</button></div></section>`;
 }
 
@@ -201,7 +212,14 @@ function reportText() {
 async function act(a, id) {
   const c = data.cfg;
   switch (a) {
-    case "signin": try { await api.signIn(); } catch { toast("Входът не успя. Опитай пак."); } break;
+    case "signin":
+      try { await api.signIn(); }
+      catch (e) {
+        if (e?.code === "auth/popup-closed-by-user" || e?.code === "auth/cancelled-popup-request") return;
+        toast(`Входът не успя (${e?.code || "неизвестна грешка"}). Опитай пак.`);
+      }
+      break;
+    case "recheck": location.reload(); break;
     case "signout": await api.signOut(); break;
     case "metric": ui.metric = id; render(); break;
     case "report-month": ui.reportMonth = id; render(); break;

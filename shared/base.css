@@ -208,3 +208,4 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 16px; margin: 0; 
 .tbl .who { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
 .team-row .chip { justify-self: start; }
 .split-tag { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; padding: 3px 8px; border-radius: 6px; color: var(--energy); border: 1px solid color-mix(in srgb, var(--energy) 50%, transparent); }
+a.btn { color: var(--ink); text-decoration: none; display: inline-flex; align-items: center; }
