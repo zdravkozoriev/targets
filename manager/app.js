@@ -1,7 +1,7 @@
 // Сайтът за мениджъра: днешните смени, класация, график, месечен отчет и настройки.
 import { connect, data, isConfigured, TEMPLATE } from "../shared/store.js";
 import { esc, money, rid, clone, addDays, weekStart, monthName, TODAY, MONTH_START, MONTH_END, PREV_MONTH_START, PREV_MONTH_END, reloadAtMidnight, registerServiceWorker } from "../shared/util.js";
-import { prod, person, shiftType, activeStaff, salesBy, goalsForDay, progressOn, periodStats } from "../shared/logic.js";
+import { prod, person, shiftType, activeStaff, salesBy, dayPlan, isSplit, periodStats } from "../shared/logic.js";
 import { chip, dot, bar, toast, viewBoard, viewSchedule, shiftFormValid, METRICS } from "../shared/ui.js";
 
 const TABS = [["today", "Днес"], ["board", "Класация"], ["schedule", "График"], ["report", "Отчет"], ["settings", "Настройки"]];
@@ -34,10 +34,18 @@ function viewToday() {
   const bonus = todays.reduce((a, s) => a + (s.bonus || 0) * (s.qty || 1), 0);
   const shifts = data.shifts.filter(s => s.date === TODAY).sort((a, b) => a.start.localeCompare(b.start));
   const cards = shifts.map(sh => {
-    const rows = (sh.staff || []).filter(person).map(id => {
-      const g = goalsForDay(id, TODAY), d = progressOn(id, g, TODAY);
-      return `<div class="team-row">${chip(id)}<span class="num">${d} / ${g.total} · ${money(salesBy(id, TODAY, TODAY).bonus)}</span>${bar(d, g.total, true)}</div>`;
-    }).join("");
+    const people = (sh.staff || []).filter(person);
+    let rows;
+    if (isSplit(sh)) {
+      const g = dayPlan(people[0], TODAY);
+      rows = `<div class="team-row"><span class="split-tag">обща цел</span><span class="num">${g.done} / ${g.total}</span>${bar(g.done, g.total, true)}</div>`
+        + people.map(id => `<div class="team-row">${chip(id)}<span class="num">${salesBy(id, TODAY, TODAY).qty} бр. · ${money(salesBy(id, TODAY, TODAY).bonus)}</span></div>`).join("");
+    } else {
+      rows = people.map(id => {
+        const g = dayPlan(id, TODAY);
+        return `<div class="team-row">${chip(id)}<span class="num">${g.done} / ${g.total} · ${money(salesBy(id, TODAY, TODAY).bonus)}</span>${bar(g.done, g.total, true)}</div>`;
+      }).join("");
+    }
     return `<div class="card stack"><div class="sec-head"><span class="stype stype-${esc(sh.type || "")}">${esc(shiftType(sh.type)?.name || "Без вид")}</span><span class="num team-total">${esc(sh.start)}–${esc(sh.end)}</span></div>${rows || `<span class="muted">Няма хора на смяната.</span>`}</div>`;
   }).join("");
   const recent = todays.slice().sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 12);
@@ -93,7 +101,7 @@ function viewSettings() {
   const d = ui.draft, k = d.contest, types = d.shiftTypes;
   return `<section class="card stack">
       <div class="sec-head"><h2>Продукти и услуги</h2>${d.products.length ? "" : `<button class="btn small" type="button" data-act="template">Добави примерни за фитнес</button>`}</div>
-      <p class="muted small">Бонусът е сумата, която колегата печели за всяка продадена бройка. Целите са колко бройки трябва да продаде всеки колега за една смяна от съответния вид. Когато двама са на смяна заедно, всеки има своя цел, а общата е сборът. Остави 0, ако продуктът няма цел за тази смяна.</p>
+      <p class="muted small">Бонусът е сумата, която колегата печели за всяка продадена бройка. Целите са колко бройки трябва да продаде всеки колега за една смяна от съответния вид. Дали двама на една смяна делят целта, или всеки има своя, се избира в „Видове смени“ по-долу и за всяка смяна в графика. Остави 0, ако продуктът няма цел за тази смяна.</p>
       <div class="tbl-wrap"><table class="tbl"><thead><tr><th rowspan="2">Име</th><th rowspan="2" style="text-align:right">Цена €</th><th rowspan="2" style="text-align:right">Бонус € / бр.</th><th colspan="${types.length}" style="text-align:center">Цел бр. за смяна</th><th rowspan="2"></th></tr>
         <tr>${types.map(t => `<th style="text-align:right">${esc(t.name)}</th>`).join("")}</tr></thead><tbody>
       ${d.products.map((p, i) => `<tr>
@@ -116,6 +124,13 @@ function viewSettings() {
         <td>${types.length > 1 ? `<button class="x" type="button" aria-label="Премахни" title="Премахни" data-act="type-del" data-id="${i}">×</button>` : ""}</td></tr>`).join("")}
       </tbody></table></div>
       <div><button class="btn small" type="button" data-act="type-add">+ Вид смяна</button></div>
+      <div class="field">Когато двама или повече са на една смяна, по подразбиране
+        <div class="row tight">
+          <button type="button" class="seg" data-act="split-default" data-id="1" aria-pressed="${!!d.splitDefault}">Делят обща цел</button>
+          <button type="button" class="seg" data-act="split-default" data-id="0" aria-pressed="${!d.splitDefault}">Всеки има своя цел</button>
+        </div>
+        <span class="muted small">При обща цел двамата имат една цел (напр. 5 шейка за смяната) и продажбите им се броят заедно. Бонусът си остава за този, който е продал. За всяка смяна в графика може да се избере различно.</span>
+      </div>
     </section>
     <section class="card stack">
       <h2>Колеги</h2>
@@ -201,7 +216,7 @@ async function act(a, id) {
     case "shift-add": {
       const used = new Set(data.shifts.filter(s => s.date === id).map(s => s.type));
       const t = c.shiftTypes.find(x => !used.has(x.id)) || c.shiftTypes[0];
-      ui.editingShift = { id: null, date: id, type: t.id, start: t.start, end: t.end, staff: [] };
+      ui.editingShift = { id: null, date: id, type: t.id, start: t.start, end: t.end, staff: [], split: c.splitDefault };
       render(); break;
     }
     case "sf-type": {
@@ -209,7 +224,9 @@ async function act(a, id) {
       if (t && e) { e.type = t.id; e.start = t.start; e.end = t.end; render(); }
       break;
     }
-    case "shift-edit": { const s = data.shifts.find(x => x.id === id); ui.editingShift = { ...s, staff: [...(s.staff || [])] }; render(); break; }
+    case "shift-edit": { const s = data.shifts.find(x => x.id === id); ui.editingShift = { ...s, staff: [...(s.staff || [])], split: s.split ?? c.splitDefault }; render(); break; }
+    case "split-default": ui.draft.splitDefault = id === "1"; markDirty(); render(); break;
+    case "sf-split": if (ui.editingShift) { ui.editingShift.split = id === "1"; render(); } break;
     case "shift-cancel": ui.editingShift = null; render(); break;
     case "shift-save": {
       const e = ui.editingShift; ui.editingShift = null;
@@ -220,7 +237,7 @@ async function act(a, id) {
     case "copy-week": {
       const ws = weekStart(ui.weekOffset);
       const prev = data.shifts.filter(s => s.date >= addDays(ws, -7) && s.date < ws);
-      try { for (const s of prev) await api.saveShift({ id: null, date: addDays(s.date, 7), type: s.type, start: s.start, end: s.end, staff: s.staff }); toast(`Копирах ${prev.length} смени`); } catch { failed(); }
+      try { for (const s of prev) await api.saveShift({ id: null, date: addDays(s.date, 7), type: s.type, start: s.start, end: s.end, staff: s.staff, split: s.split }); toast(`Копирах ${prev.length} смени`); } catch { failed(); }
       render(); break;
     }
     case "template": ui.draft.products = clone(TEMPLATE).map(p => ({ id: "p" + rid(), ...p })); markDirty(); render(); break;
@@ -272,7 +289,7 @@ app.addEventListener("change", e => {
   if (t.dataset.sfstaff && ui.editingShift) {
     const s = new Set(ui.editingShift.staff);
     t.checked ? s.add(t.dataset.sfstaff) : s.delete(t.dataset.sfstaff);
-    ui.editingShift.staff = [...s]; refreshShiftSave();
+    ui.editingShift.staff = [...s]; render();
   }
 });
 function refreshShiftSave() {

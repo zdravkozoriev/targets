@@ -1,40 +1,25 @@
-/* Общ стил на двата сайта. Табло като на стадион: лепкав хедър с раздели, едно голямо „табло“ на изглед, плочки за продажба с едно докосване. */
+/* Общ стил на двата сайта. Тъмна тема. Табло като на стадион: лепкав хедър с раздели, едно голямо „табло“ на изглед, плочки за продажба с едно докосване. */
 
 :root {
-  --bg: #eef0f4;
-  --surface: #ffffff;
-  --sunk: #e3e6ee;
-  --ink: #12151c;
-  --muted: #5d6475;
-  --line: #d4d8e2;
-  --accent: #2346f0;
-  --accent-ink: #ffffff;
-  --accent-soft: #dfe5ff;
-  --energy: #f2622a;
-  --good: #14894e;
-  --good-soft: #d7f2e3;
-  --warn: #b25b00;
-  --warn-soft: #fdebd3;
-  --c0: #2346f0; --c1: #d9431e; --c2: #0f8a63; --c3: #9a3ccf; --c4: #c08a00; --c5: #0b84b5;
+  --bg: #0d1017;
+  --surface: #161b25;
+  --sunk: #1f2532;
+  --ink: #eef1f7;
+  --muted: #9aa3b6;
+  --line: #2b3242;
+  --accent: #7189ff;
+  --accent-ink: #0d1017;
+  --accent-soft: #232c52;
+  --energy: #ff8656;
+  --good: #45c987;
+  --good-soft: #15352a;
+  --warn: #f0a650;
+  --warn-soft: #3a2a14;
+  --c0: #7189ff; --c1: #ff7f5c; --c2: #3fcf9b; --c3: #c58bff; --c4: #f0c341; --c5: #4cc3f0;
   --display: "Unbounded", "Arial Black", system-ui, sans-serif;
   --body: "Golos Text", "Segoe UI", system-ui, sans-serif;
   --num: "Fira Sans Extra Condensed", "Arial Narrow", system-ui, sans-serif;
   --radius: 14px;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0d1017; --surface: #161b25; --sunk: #1f2532; --ink: #eef1f7; --muted: #9aa3b6; --line: #2b3242;
-    --accent: #7189ff; --accent-ink: #0d1017; --accent-soft: #232c52; --energy: #ff8656;
-    --good: #45c987; --good-soft: #15352a; --warn: #f0a650; --warn-soft: #3a2a14;
-    --c0: #7189ff; --c1: #ff7f5c; --c2: #3fcf9b; --c3: #c58bff; --c4: #f0c341; --c5: #4cc3f0;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #0d1017; --surface: #161b25; --sunk: #1f2532; --ink: #eef1f7; --muted: #9aa3b6; --line: #2b3242;
-  --accent: #7189ff; --accent-ink: #0d1017; --accent-soft: #232c52; --energy: #ff8656;
-  --good: #45c987; --good-soft: #15352a; --warn: #f0a650; --warn-soft: #3a2a14;
-  --c0: #7189ff; --c1: #ff7f5c; --c2: #3fcf9b; --c3: #c58bff; --c4: #f0c341; --c5: #4cc3f0;
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
@@ -132,9 +117,9 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 16px; margin: 0; 
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 
 /* Leaderboard */
-.contest { border-radius: 20px; padding: 18px 20px; background: var(--ink); color: var(--bg); display: grid; gap: 4px; }
+.contest { border-radius: 20px; padding: 18px 20px; background: linear-gradient(135deg, var(--accent-soft), var(--surface)); border: 1px solid color-mix(in srgb, var(--energy) 45%, transparent); color: var(--ink); display: grid; gap: 4px; }
 .contest .t { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: -0.01em; text-wrap: balance; }
-.contest .p { font-weight: 600; color: color-mix(in srgb, var(--energy) 80%, var(--bg)); }
+.contest .p { font-weight: 600; color: var(--energy); }
 .board { display: grid; gap: 8px; }
 .rank { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; }
 .rank .pos { font-family: var(--display); font-weight: 800; font-size: 22px; color: var(--muted); text-align: center; }
@@ -222,3 +207,4 @@ h2 { font-family: var(--display); font-weight: 600; font-size: 16px; margin: 0; 
 .text-input { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; flex: 1; min-width: 0; font-size: 15px; color: var(--ink); }
 .tbl .who { display: inline-flex; align-items: center; gap: 8px; font-weight: 600; }
 .team-row .chip { justify-self: start; }
+.split-tag { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; padding: 3px 8px; border-radius: 6px; color: var(--energy); border: 1px solid color-mix(in srgb, var(--energy) 50%, transparent); }

@@ -23,7 +23,7 @@ export const TEMPLATE = [
 export const data = { cfg: null, shifts: [], sales: [] };
 
 export function emptyCfg() {
-  return { products: [], staff: [], shiftTypes: clone(SHIFT_TYPES), contest: { on: false, title: "", prize: "", metric: "pct", from: MONTH_START, to: MONTH_END } };
+  return { products: [], staff: [], shiftTypes: clone(SHIFT_TYPES), splitDefault: true, contest: { on: false, title: "", prize: "", metric: "pct", from: MONTH_START, to: MONTH_END } };
 }
 
 function normCfg(c) {
@@ -33,6 +33,7 @@ function normCfg(c) {
     products: (Array.isArray(c?.products) ? c.products : []).map(p => ({ ...p, targets: p.targets || {} })),
     staff: Array.isArray(c?.staff) ? c.staff : [],
     shiftTypes,
+    splitDefault: c?.splitDefault ?? e.splitDefault,
     contest: { ...e.contest, ...(c?.contest || {}) }
   };
 }
@@ -52,7 +53,7 @@ function makeDemo() {
       continue;
     }
     shifts.push({ id: "m" + d, date: d, type: "morning", start: "07:00", end: "14:30", staff: k % 3 === 0 ? ["s1", "s2"] : ["s1"] });
-    shifts.push({ id: "e" + d, date: d, type: "evening", start: "14:30", end: "22:00", staff: k % 2 === 0 ? ["s2", "s3"] : ["s3"] });
+    shifts.push({ id: "e" + d, date: d, type: "evening", start: "14:30", end: "22:00", staff: k % 2 === 0 ? ["s2", "s3"] : ["s3"], split: k % 4 === 0 });
   }
   const skill = { s1: 1.1, s2: 0.75, s3: 0.95 };
   for (const sh of shifts) {
@@ -64,7 +65,7 @@ function makeDemo() {
       for (let i = 0; i < n; i++) sales.push({ id: rid(), date: sh.date, ts: 0, time: sh.start, staffId: sid, productId: p.id, qty: 1, price: p.price, bonus: p.bonus, shiftId: sh.id, uid: "demo" });
     }
   }
-  const cfg = { products, staff, shiftTypes: clone(SHIFT_TYPES), contest: { on: true, title: "Есенен шампионат", prize: "Ваучер за 50 € и почивен уикенд", metric: "pct", from: MONTH_START, to: MONTH_END } };
+  const cfg = { products, staff, shiftTypes: clone(SHIFT_TYPES), splitDefault: true, contest: { on: true, title: "Есенен шампионат", prize: "Ваучер за 50 € и почивен уикенд", metric: "pct", from: MONTH_START, to: MONTH_END } };
   return { cfg, shifts, sales };
 }
 
@@ -77,7 +78,7 @@ function demoBackend(onChange) {
     async deleteSale(id) { data.sales = data.sales.filter(s => s.id !== id); done(); },
     async saveCfg(cfg) { data.cfg = clone(cfg); done(); },
     async saveShift(sh) {
-      const body = { date: sh.date, type: sh.type, start: sh.start, end: sh.end, staff: sh.staff };
+      const body = { date: sh.date, type: sh.type, start: sh.start, end: sh.end, staff: sh.staff, split: !!sh.split && sh.staff.length > 1 };
       const i = data.shifts.findIndex(s => s.id === sh.id);
       if (i >= 0) data.shifts[i] = { id: sh.id, ...body }; else data.shifts.push({ id: rid(), ...body });
       done();
@@ -170,7 +171,7 @@ export async function connect({ role, onChange, onAuth }) {
     async deleteSale(id) { await fs.deleteDoc(fs.doc(db, "sales", id)); },
     async saveCfg(cfg) { await fs.setDoc(fs.doc(db, "config", "main"), cfg); subscribeSales(wantedSalesFrom()); },
     async saveShift(sh) {
-      const body = { date: sh.date, type: sh.type, start: sh.start, end: sh.end, staff: sh.staff };
+      const body = { date: sh.date, type: sh.type, start: sh.start, end: sh.end, staff: sh.staff, split: !!sh.split && sh.staff.length > 1 };
       await fs.setDoc(sh.id ? fs.doc(db, "shifts", sh.id) : fs.doc(fs.collection(db, "shifts")), body);
     },
     async deleteShift(id) { await fs.deleteDoc(fs.doc(db, "shifts", id)); },

@@ -1,7 +1,7 @@
 // Общи части на интерфейса: известия, фойерверки, класация и график.
 import { data } from "./store.js";
 import { esc, money, dm, parse, addDays, weekStart, TODAY, WD, monthName } from "./util.js";
-import { person, colorOf, activeStaff, shiftType, periodStats, contestPeriod } from "./logic.js";
+import { person, colorOf, activeStaff, shiftType, periodStats, contestPeriod, isSplit } from "./logic.js";
 
 export const chip = id => `<span class="chip" style="--cc:${colorOf(id)}">${esc(person(id)?.name || "Бивш колега")}</span>`;
 export const dot = id => `<span class="dot" style="--cc:${colorOf(id)}"></span>`;
@@ -122,6 +122,9 @@ function shiftForm(e) {
       <label class="field" for="sf-end">Край<input id="sf-end" type="time" value="${esc(e.end)}" data-sf="end"></label>
     </div>
     <div class="field">Кой е на смяна<div class="checks">${activeStaff().map(s => `<label><input type="checkbox" data-sfstaff="${esc(s.id)}" ${e.staff.includes(s.id) ? "checked" : ""}>${esc(s.name)}</label>`).join("") || `<span class="muted">Първо добави колеги в Настройки.</span>`}</div></div>
+    ${e.staff.length > 1 ? `<div class="field">Цел при повече хора<div class="row tight">
+      <button type="button" class="seg" data-act="sf-split" data-id="1" aria-pressed="${!!e.split}">Обща цел, делят я</button>
+      <button type="button" class="seg" data-act="sf-split" data-id="0" aria-pressed="${!e.split}">Всеки със своя цел</button></div></div>` : ""}
     <div class="row"><button class="btn primary small" type="button" data-act="shift-save" ${shiftFormValid(e) ? "" : "disabled"}>Запази смяната</button><button class="btn small" type="button" data-act="shift-cancel">Откажи</button></div>
   </div>`;
 }
@@ -141,7 +144,7 @@ export function viewSchedule({ weekOffset, editing, editable }) {
       const adding = ed && !ed.id && ed.date === d;
       return `<div class="day ${d === TODAY ? "today" : ""}">
         <div class="day-h"><b>${WD[parse(d).getDay()]} ${dm(d)}</b>${d === TODAY ? `<span class="eyebrow accent">днес</span>` : ""}</div>
-        ${list.map(s => ed && ed.id === s.id ? shiftForm(ed) : `<div class="shift"><span class="stype stype-${esc(s.type || "")}">${esc(shiftType(s.type)?.name || "Без вид")}</span><div class="time"><span>${esc(s.start)} – ${esc(s.end)}</span>${editable ? `<span class="row tight"><button class="btn small" type="button" data-act="shift-edit" data-id="${esc(s.id)}">Промени</button><button class="x" type="button" aria-label="Изтрий смяната" title="Изтрий" data-act="shift-del" data-id="${esc(s.id)}">×</button></span>` : ""}</div><div class="chips">${(s.staff || []).map(chip).join("")}</div></div>`).join("") || (adding ? "" : `<span class="empty-day">Няма смени</span>`)}
+        ${list.map(s => ed && ed.id === s.id ? shiftForm(ed) : `<div class="shift"><span class="stype stype-${esc(s.type || "")}">${esc(shiftType(s.type)?.name || "Без вид")}</span><div class="time"><span>${esc(s.start)} – ${esc(s.end)}</span>${editable ? `<span class="row tight"><button class="btn small" type="button" data-act="shift-edit" data-id="${esc(s.id)}">Промени</button><button class="x" type="button" aria-label="Изтрий смяната" title="Изтрий" data-act="shift-del" data-id="${esc(s.id)}">×</button></span>` : ""}</div><div class="chips">${(s.staff || []).map(chip).join("")}${isSplit(s) ? `<span class="split-tag">обща цел</span>` : ""}</div></div>`).join("") || (adding ? "" : `<span class="empty-day">Няма смени</span>`)}
         ${adding ? shiftForm(ed) : ""}
         ${editable && !(ed && ed.date === d) ? `<button class="btn small" type="button" data-act="shift-add" data-id="${d}">+ Смяна</button>` : ""}
       </div>`;
